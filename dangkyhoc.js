@@ -60,20 +60,14 @@ function auto_pick(wish_list = {}) {
 };
 
 function auto_submit(interval_time = 2) {
-    const _BASE_URL = 'http://dangkyhoc.vnu.edu.vn';
     cancel_submit();
     window.autosubmit = setInterval(function() {
-        $.post(
-            _BASE_URL + '/xac-nhan-dang-ky/' + $registrationMode,
-            null, 
-            (data) => {
-                console.log(get_time_str(), data);
-                if (data.message.substring(0, 18) === 'Đăng ký thành công') {
-                    cancel_submit();
-                }
-            }, 
-            "json"
-        );
+        submit_courses((data) => {
+            console.log(get_time_str(), ' Submit: ', data);
+            if (data.message.substring(0, 18) === 'Đăng ký thành công') {
+                cancel_submit();
+            }
+        });
     }, 1000 * interval_time);
 };
 
@@ -81,6 +75,56 @@ function cancel_submit() {
     if (window.autosubmit) {
         clearInterval(window.autosubmit);
     }
+};
+
+function auto_watch(rowindexes, interval_time = 2) {
+    cancel_watch();
+    window.autowatch = setInterval(function() {
+        rowindexes.forEach(rowindex => {
+            grab_course(rowindex, (data) => {
+                console.log(get_time_str(), ' Watch: ', data);
+            });
+        });
+    }, 1000 * interval_time);
+};
+
+function cancel_watch() {
+    if (window.autowatch) {
+        clearInterval(window.autowatch);
+    }
+};
+
+
+function grab_course(rowindex, onSuccess) {
+    pend_course(rowindex, (data) => {
+        if (data.message === '') {
+            submit_courses((res) => {
+                onSuccess(res);
+            });
+        }
+    });
+};
+
+function submit_courses(onSuccess) {
+    const _BASE_URL = 'http://dangkyhoc.vnu.edu.vn';
+    $.post(
+        _BASE_URL + '/xac-nhan-dang-ky/' + $registrationMode,
+        null, 
+        onSuccess,
+        "json"
+    );
+};
+
+function pend_course(rowindex, onSuccess) {
+    const _BASE_URL = 'http://dangkyhoc.vnu.edu.vn';
+    const route = "/chon-mon-hoc/" + rowindex + "/" + $registrationMode + "/" + $dsdkMod;
+    $.ajax({
+        type: "POST", 
+        cache: false, 
+        url: _BASE_URL + route, 
+        dataType: "json", 
+        success: onSuccess
+    });
 };
 
 const tool_ui = $(`
@@ -96,17 +140,32 @@ const tool_ui = $(`
         </div>
         <div class="row form-group">
             <div class="col-sm-12">
-                <label for="interval-time-input">Khoảng giây giữa các lần nộp môn:</label>
-                <input id="interval-time-input" class="form-control" />
+                <label for="interval-submit-input">Chu kỳ giây nộp môn:</label>
+                <input id="interval-submit-input" class="form-control" />
             </div>
             <div class="col-sm-12" style="margin-top: 10px">
-                <button id="interval-request-button" class="btn btn-success pull-right">Nộp</button>
-                <button id="interval-cancel-request-button" class="btn btn-secondary pull-right" style="margin-right: 5px;">Ngừng nộp</button>
+                <button id="autosubmit-button" class="btn btn-success pull-right">Nộp</button>
+                <button id="cancel-autosubmit-button" class="btn btn-secondary pull-right" style="margin-right: 5px;">Ngừng nộp</button>
+            </div>
+        </div>
+        <div class="row form-group">
+            <div class="col-sm-12">
+                <label for="rowindexes-input">Canh môn bằng rowindex:</label>
+                <input id="rowindexes-input" class="form-control" />
+            </div>
+            <div class="col-sm-12" style="margin-top: 10px">
+                <label for="interval-watch-input">Chu kỳ giây chộp môn:</label>
+                <input id="interval-watch-input" class="form-control" />
+            </div>
+            <div class="col-sm-12" style="margin-top: 10px">
+                <button id="autowatch-button" class="btn btn-info pull-right">Canh</button>
+                <button id="cancel-autowatch-button" class="btn btn-secondary pull-right" style="margin-right: 5px;">Ngừng canh</button>
             </div>
         </div>
     </div>
 `);
 $('#main-nav').append(tool_ui);
+
 $('#courses-pick-button').click(function() {
     const courses_str = $('#courses-input').val() || '';
     const courses = courses_str.split(/\.|,|;/);
@@ -116,11 +175,21 @@ $('#courses-pick-button').click(function() {
     });
     auto_pick(wish_list);
 });
-$('#interval-request-button').click(function() {
-    const interval_time = parseFloat($('#interval-time-input').val()) || 2;
+$('#autosubmit-button').click(function() {
+    const interval_time = parseFloat($('#interval-submit-input').val()) || 2;
     auto_submit(interval_time);
 });
-$('#interval-cancel-request-button').click(function() {
+$('#cancel-autosubmit-button').click(function() {
     cancel_submit();
+});
+
+$('#autowatch-button').click(function() {
+    const rowindexes_str = $('#rowindexes-input').val() || '';
+    const rowindexes = rowindexes_str.split(/\.|,|;/);
+    const interval_time = parseFloat($('#interval-watch-input').val()) || 2;
+    auto_watch(rowindexes, interval_time);
+});
+$('#cancel-autowatch-button').click(function() {
+    cancel_watch();
 });
 
