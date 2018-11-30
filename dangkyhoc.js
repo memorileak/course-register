@@ -55,15 +55,15 @@ function auto_pick(wish_list = {}) {
             }
         }
     });
-    console.log('Wish:   ', wish_courses);
-    console.log('Picked: ', picked_courses);
+    console.log('Wish:\t', wish_courses);
+    console.log('Picked:\t', picked_courses);
 };
 
 function auto_submit(interval_time = 2) {
     cancel_submit();
     window.autosubmit = setInterval(function() {
         submit_courses((data) => {
-            console.log(get_time_str(), ' Submit: ', data);
+            console.log(get_time_str(), ' Submit:\t', data);
             if (data.message.substring(0, 18) === 'Đăng ký thành công') {
                 cancel_submit();
             }
@@ -80,10 +80,13 @@ function cancel_submit() {
 function auto_watch(rowindexes, interval_time = 2) {
     cancel_watch();
     window.autowatch = setInterval(function() {
+        console.log('\n');
         rowindexes.forEach(rowindex => {
-            grab_course(rowindex, (data) => {
-                console.log(get_time_str(), ' Watch: ', data);
-            });
+            if (rowindex) {
+                grab_course(rowindex, (data) => {
+                    console.log(get_time_str(), ` Watch: ${rowindex}\t`, data);
+                });
+            }
         });
     }, 1000 * interval_time);
 };
@@ -93,7 +96,6 @@ function cancel_watch() {
         clearInterval(window.autowatch);
     }
 };
-
 
 function grab_course(rowindex, onSuccess) {
     pend_course(rowindex, (data) => {
@@ -185,7 +187,7 @@ $('#cancel-autosubmit-button').click(function() {
 
 $('#autowatch-button').click(function() {
     const rowindexes_str = $('#rowindexes-input').val() || '';
-    const rowindexes = rowindexes_str.split(/\.|,|;/);
+    const rowindexes = rowindexes_str.split(/\.|,|;/).map(str => format_string(str));
     const interval_time = parseFloat($('#interval-watch-input').val()) || 2;
     auto_watch(rowindexes, interval_time);
 });
