@@ -35,6 +35,7 @@ function pick_course({course_id, course_name, crdid, rowindex, numcrd}) {
 };
 
 function auto_pick(wish_list = {}) {
+    const wish_courses = [];
     const picked_courses = [];
     const checkboxes = $(".order").toArray();
     const available_courses = checkboxes.map((checkbox) => {
@@ -48,12 +49,14 @@ function auto_pick(wish_list = {}) {
     });
     available_courses.forEach((course) => {
         if (wish_list[course.course_id]) {
+            wish_courses.push(course);
             if (pick_course(course)) {
                 picked_courses.push(course);
             }
         }
     });
-    console.log(picked_courses);
+    console.log('Wish:   ', wish_courses);
+    console.log('Picked: ', picked_courses);
 };
 
 function auto_submit(interval_time = 2) {
@@ -65,7 +68,7 @@ function auto_submit(interval_time = 2) {
             null, 
             (data) => {
                 console.log(get_time_str(), data);
-                if (data.message !== 'Ngoài thời hạn đăng ký') {
+                if (data.message.substring(0, 18) === 'Đăng ký thành công') {
                     cancel_submit();
                 }
             }, 
@@ -114,7 +117,7 @@ $('#courses-pick-button').click(function() {
     auto_pick(wish_list);
 });
 $('#interval-request-button').click(function() {
-    const interval_time = parseInt($('#interval-time-input').val()) || 2;
+    const interval_time = parseFloat($('#interval-time-input').val()) || 2;
     auto_submit(interval_time);
 });
 $('#interval-cancel-request-button').click(function() {
